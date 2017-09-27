@@ -5,9 +5,9 @@ using UnityEngine;
 public class PlayerController : Photon.MonoBehaviour {
 
     Rigidbody rigi;
-    private int forwardAcceleration = 5;
-    private int strafeAcceleration = 3;
-    private float walkingSpeed = 3f;
+    private int forwardAcceleration = 14;
+    private int strafeAcceleration = 8;
+    private float walkingSpeed = 8f;
     private Vector3 walkingChange = new Vector3(0,0,0);
     private float jumpSpeed = 15f;
     Camera cam;
@@ -28,11 +28,11 @@ public class PlayerController : Photon.MonoBehaviour {
     private float onPlanetAutoRotSpeed = 1f;
 
     public float speedLimit = 30;
-    public float speedLimitSettingSpeed = 0.1f;
+    public float speedLimitSettingSpeed = 0.28f;
     public float deacceleratorSpeed = 0.9f;
 
     private float maxStandingVelocity = 4;
-    private float directionInterpolation = 0.01f;
+    private float directionInterpolation = 0.028f;
 
     private bool lastAttracted = false;
     private bool inJump = false;
@@ -66,18 +66,12 @@ public class PlayerController : Photon.MonoBehaviour {
         cameraControlls = transform.GetChild(0).gameObject.GetComponent<CameraControlls>();
     } //Setup 
 
-    void Update() //Movement + FOV
+    private void FixedUpdate()
     {
-        if (Input.GetMouseButtonDown(0) && Cursor.lockState != CursorLockMode.Locked)
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-        }
-
-        //Debug.Log("Velocity: " + rigi.velocity.magnitude + photonView.owner);
         if (photonView.isMine && PhotonNetwork.connected)
         {
 
-            rotate();
+            FindNearestPlanet();
 
             if (nearestPlanet != null && !inJump)
             {
@@ -97,12 +91,25 @@ public class PlayerController : Photon.MonoBehaviour {
 
             if (Input.GetKey(KeyCode.LeftControl))
             {
-                rigi.velocity = rigi.velocity * deacceleratorSpeed;
+                rigi.velocity = rigi.velocity * Mathf.Pow(deacceleratorSpeed, 144 / 50);
             }
 
             cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, Mathf.Clamp(fov + rigi.velocity.magnitude, fov, fastfov + fov), fovspeed); //Fov change
 
         }
+    }
+
+    void Update() //Movement + FOV
+    {
+        if (Input.GetMouseButtonDown(0) && Cursor.lockState != CursorLockMode.Locked)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+        }
+
+        rotate();
+
+        //Debug.Log("Velocity: " + rigi.velocity.magnitude + photonView.owner);
+
     }
 
     private void jetBoost()
@@ -173,14 +180,8 @@ public class PlayerController : Photon.MonoBehaviour {
             turnrot = -rotSensivity;
         }
 
-        foreach (GameObject planet in GameObject.FindGameObjectsWithTag("Planet"))
-        {
-            if (nearestPlanet == null) nearestPlanet = planet;
-            else if ((nearestPlanet.transform.position - transform.position).magnitude > (planet.transform.position - transform.position).magnitude)
-            {
-                nearestPlanet = planet;
-            }
-        }
+        FindNearestPlanet();
+
         if (nearestPlanet != null)
         {
             if (standingOnPlanet(nearestPlanet))
@@ -230,6 +231,18 @@ public class PlayerController : Photon.MonoBehaviour {
     public bool isTheMasterClient()
     {
         return PhotonNetwork.isMasterClient;
+    }
+
+    private void FindNearestPlanet()
+    {
+        foreach (GameObject planet in GameObject.FindGameObjectsWithTag("Planet"))
+        {
+            if (nearestPlanet == null) nearestPlanet = planet;
+            else if ((nearestPlanet.transform.position - transform.position).magnitude > (planet.transform.position - transform.position).magnitude)
+            {
+                nearestPlanet = planet;
+            }
+        }
     }
 
     /*
