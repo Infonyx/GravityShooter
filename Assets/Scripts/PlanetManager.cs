@@ -28,7 +28,6 @@ public class PlanetManager : Photon.PunBehaviour {
 
     private void FixedUpdate()
     {
-        Debug.Log(size);
         foreach (GameObject player in GameObject.FindGameObjectsWithTag("Player"))
         {
             if (player.GetPhotonView().isMine) {

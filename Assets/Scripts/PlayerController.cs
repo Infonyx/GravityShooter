@@ -7,7 +7,7 @@ public class PlayerController : Photon.MonoBehaviour {
     Rigidbody rigi;
     private int forwardAcceleration = 14;
     private int strafeAcceleration = 8;
-    private float walkingSpeed = 8f;
+    private float walkingSpeed = 400f;
     private Vector3 walkingChange = new Vector3(0,0,0);
     private float jumpSpeed = 15f;
     Camera cam;
@@ -73,21 +73,11 @@ public class PlayerController : Photon.MonoBehaviour {
 
             FindNearestPlanet();
 
-            if (nearestPlanet != null && !inJump)
-            {
-                if (standingOnPlanet(nearestPlanet))
-                {
-                    walk(nearestPlanet);
-                }
-                else
-                {
-                    jetBoost();
-                }
+            if (!standingOnPlanet(nearestPlanet) || Input.GetKeyDown(KeyCode.LeftShift))
+            {           
+                jetBoost();             
             }
-            else
-            {
-                jetBoost();
-            } //Movement method callers
+            
 
             if (Input.GetKey(KeyCode.LeftControl))
             {
@@ -101,13 +91,24 @@ public class PlayerController : Photon.MonoBehaviour {
 
     void Update() //Movement + FOV
     {
-        if (Input.GetMouseButtonDown(0) && Cursor.lockState != CursorLockMode.Locked)
+        if (photonView.isMine && PhotonNetwork.connected)
         {
-            Cursor.lockState = CursorLockMode.Locked;
+            if (Input.GetMouseButtonDown(0) && Cursor.lockState != CursorLockMode.Locked)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+            }
+
+            FindNearestPlanet();
+
+            if (standingOnPlanet(nearestPlanet))
+            {
+                walk(nearestPlanet);
+            }
+
+
+            rotate();
+
         }
-
-        rotate();
-
         //Debug.Log("Velocity: " + rigi.velocity.magnitude + photonView.owner);
 
     }
@@ -122,23 +123,23 @@ public class PlayerController : Photon.MonoBehaviour {
         {
             rigi.velocity = Vector3.Slerp(rigi.velocity.normalized, transform.forward, directionInterpolation) * rigi.velocity.magnitude;
         }
-        if (Input.GetKey(KeyCode.A))
+        if (Input.GetKey(KeyCode.A) && rigi.velocity.magnitude < speedLimit)
         {
             rigi.AddRelativeForce(new Vector3(-strafeAcceleration, 0, 0), ForceMode.Acceleration);
         }
-        if (Input.GetKey(KeyCode.D))
+        if (Input.GetKey(KeyCode.D) && rigi.velocity.magnitude < speedLimit)
         {
             rigi.AddRelativeForce(new Vector3(strafeAcceleration, 0, 0), ForceMode.Acceleration);
         }
-        if (Input.GetKey(KeyCode.S))
+        if (Input.GetKey(KeyCode.S) && rigi.velocity.magnitude < speedLimit)
         {
             rigi.AddRelativeForce(new Vector3(0, 0, -strafeAcceleration), ForceMode.Acceleration);
         }
-        if (Input.GetKey(KeyCode.Space))
+        if (Input.GetKey(KeyCode.Space) && rigi.velocity.magnitude < speedLimit)
         {
             rigi.AddRelativeForce(new Vector3(0, strafeAcceleration, 0), ForceMode.Acceleration);
         }
-        if (Input.GetKey(KeyCode.C))
+        if (Input.GetKey(KeyCode.C) && rigi.velocity.magnitude < speedLimit)
         {
             rigi.AddRelativeForce(new Vector3(0, -strafeAcceleration, 0), ForceMode.Acceleration);
         }
@@ -149,19 +150,19 @@ public class PlayerController : Photon.MonoBehaviour {
 
         if (Input.GetKey(KeyCode.W))
         {
-            transform.RotateAround(nearestPlanet.transform.position, transform.right, walkingSpeed / (Vector3.Distance(transform.position, nearestPlanet.transform.position)));
+            transform.RotateAround(nearestPlanet.transform.position, transform.right, Time.deltaTime * walkingSpeed / (Vector3.Distance(transform.position, nearestPlanet.transform.position)));
         }
         if (Input.GetKey(KeyCode.A))
         {
-            transform.RotateAround(nearestPlanet.transform.position, transform.forward, walkingSpeed / (Vector3.Distance(transform.position, nearestPlanet.transform.position)));
+            transform.RotateAround(nearestPlanet.transform.position, transform.forward, Time.deltaTime * walkingSpeed / (Vector3.Distance(transform.position, nearestPlanet.transform.position)));
         }
         if (Input.GetKey(KeyCode.D))
         {
-            transform.RotateAround(nearestPlanet.transform.position, transform.forward, -walkingSpeed / (Vector3.Distance(transform.position, nearestPlanet.transform.position)));
+            transform.RotateAround(nearestPlanet.transform.position, transform.forward, Time.deltaTime * -walkingSpeed / (Vector3.Distance(transform.position, nearestPlanet.transform.position)));
         }
         if (Input.GetKey(KeyCode.S))
         {
-            transform.RotateAround(nearestPlanet.transform.position, transform.right, -walkingSpeed / (Vector3.Distance(transform.position, nearestPlanet.transform.position)));
+            transform.RotateAround(nearestPlanet.transform.position, transform.right, Time.deltaTime * -walkingSpeed / (Vector3.Distance(transform.position, nearestPlanet.transform.position)));
         }
         if (Input.GetKeyDown(KeyCode.Space))
         {
@@ -225,7 +226,9 @@ public class PlayerController : Photon.MonoBehaviour {
 
     public bool standingOnPlanet(GameObject planet)
     {
-        return (planet.transform.position - playerSelf.transform.position).magnitude <= planet.GetComponent<PlanetManager>().size / 2 + planet.GetComponent<PlanetManager>().standingRadius && (worldVelocity(playerSelf, planet) - planet.GetComponent<PlanetOrbit>().orbitVelocity).magnitude <= maxStandingVelocity && !Input.GetKey(KeyCode.LeftShift);
+        if (planet != null)
+            return (planet.transform.position - playerSelf.transform.position).magnitude <= planet.GetComponent<PlanetManager>().size / 2 + planet.GetComponent<PlanetManager>().standingRadius && (worldVelocity(playerSelf, planet) - planet.GetComponent<PlanetOrbit>().orbitVelocity).magnitude <= maxStandingVelocity && !Input.GetKey(KeyCode.LeftShift);
+        else return false;
     }
 
     public bool isTheMasterClient()

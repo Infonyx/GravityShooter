@@ -198,6 +198,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   health: 100
+  lineRenderer: {fileID: 1727124640824502, guid: 816b70a0a930bfd42bc3951c09b9d6e4,
+    type: 2}
+  lineRendererSelf: {fileID: 0}
 --- !u!114 &114174051039278160
 MonoBehaviour:
   m_ObjectHideFlags: 1
