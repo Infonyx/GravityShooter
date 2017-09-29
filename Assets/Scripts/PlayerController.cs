@@ -1,12 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerController : Photon.MonoBehaviour {
 
     Rigidbody rigi;
-    private int forwardAcceleration = 14;
-    private int strafeAcceleration = 8;
+    [HideInInspector] public float forwardAcceleration = 14;
+    [HideInInspector] public float strafeAcceleration = 8;
     private float walkingSpeed = 400f;
     private Vector3 walkingChange = new Vector3(0,0,0);
     private float jumpSpeed = 15f;
@@ -31,6 +32,18 @@ public class PlayerController : Photon.MonoBehaviour {
     public float speedLimitSettingSpeed = 0.28f;
     public float deacceleratorSpeed = 0.9f;
 
+    private float dashSpeed = 40;
+    private float dashCooldown = 4;
+    private float dashVelocityDecrease = 0.2f;
+    private float dashBarChangeSpeed = 0.1f;
+    private float leftDashDelay = 0;
+    private float rightDashDelay = 0;
+    private Slider leftBar;
+    private Slider rightBar;
+
+
+    public float sniperZoom = 3.5f;
+
     private float maxStandingVelocity = 4;
     private float directionInterpolation = 0.028f;
 
@@ -47,7 +60,28 @@ public class PlayerController : Photon.MonoBehaviour {
         {
             PlayerController.LocalPlayerInstance = this.gameObject;
         }
-        DontDestroyOnLoad(this.gameObject);
+        //DontDestroyOnLoad(this.gameObject);
+        
+        /*if (GameObject.FindGameObjectWithTag("PlayerManager").GetComponent<PlayerClassManager>().playerClass == 2)
+        {
+            GameObject.FindGameObjectWithTag("PhantomPanel").SetActive(true);
+            leftBar = GameObject.FindGameObjectWithTag("PhantomLeftBar").GetComponent<Slider>();
+            rightBar = GameObject.FindGameObjectWithTag("PhantomRightBar").GetComponent<Slider>();
+        }*/
+        
+    }
+
+
+    public void CallSetStats(float nforwardSpeed, float nstrafeSpeed)
+    {
+        photonView.RPC("SetStats", PhotonTargets.All, nforwardSpeed, nstrafeSpeed);
+    }
+
+    [PunRPC]
+    public void SetStats(float nforwardSpeed, float nstrafeSpeed)
+    {
+        forwardAcceleration = nforwardSpeed;
+        strafeAcceleration = nstrafeSpeed;
     }
 
     void Start() {
@@ -55,7 +89,7 @@ public class PlayerController : Photon.MonoBehaviour {
             Destroy(transform.GetChild(0).gameObject);
             //Destroy(gameObject.GetComponent<PlayerController>());
         }
-
+       
         playerSelf = gameObject;
         rigi = GetComponent<Rigidbody>();
         rigi.freezeRotation = true;
@@ -64,6 +98,15 @@ public class PlayerController : Photon.MonoBehaviour {
         oldpos = Input.mousePosition;
 
         cameraControlls = transform.GetChild(0).gameObject.GetComponent<CameraControlls>();
+
+        if (GameObject.FindGameObjectWithTag("PlayerManager").GetComponent<PlayerClassManager>().playerClass == 2)
+        {
+            leftBar = GameObject.Find("LeftBar").GetComponent<Slider>();
+            rightBar = GameObject.Find("RightBar").GetComponent<Slider>();
+        } else
+        {
+            GameObject.Find("Phantom").SetActive(false);
+        }
     } //Setup 
 
     private void FixedUpdate()
@@ -84,8 +127,13 @@ public class PlayerController : Photon.MonoBehaviour {
                 rigi.velocity = rigi.velocity * Mathf.Pow(deacceleratorSpeed, 144 / 50);
             }
 
-            cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, Mathf.Clamp(fov + rigi.velocity.magnitude, fov, fastfov + fov), fovspeed); //Fov change
-
+            if (Input.GetMouseButton(1))
+            {
+                cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, fov / sniperZoom, fovspeed); //Fov change
+            } else
+            {
+                cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, Mathf.Clamp(fov + rigi.velocity.magnitude, fov, fastfov + fov), fovspeed); //Fov change
+            }
         }
     }
 
@@ -105,9 +153,13 @@ public class PlayerController : Photon.MonoBehaviour {
                 walk(nearestPlanet);
             }
 
-
             rotate();
 
+            if (GameObject.FindGameObjectWithTag("PlayerManager").GetComponent<PlayerClassManager>().playerClass == 2)
+            {
+                PhantomUpdate();
+                PhantomMovement();
+            }
         }
         //Debug.Log("Velocity: " + rigi.velocity.magnitude + photonView.owner);
 
@@ -143,7 +195,41 @@ public class PlayerController : Photon.MonoBehaviour {
         {
             rigi.AddRelativeForce(new Vector3(0, -strafeAcceleration, 0), ForceMode.Acceleration);
         }
+        
     } //InSpace-Movement
+
+    private void PhantomUpdate()
+    {
+        leftBar.value = Mathf.Lerp(leftBar.value,1-leftDashDelay/dashCooldown, dashBarChangeSpeed);
+        rightBar.value =Mathf.Lerp(rightBar.value, 1-rightDashDelay/dashCooldown, dashBarChangeSpeed);
+    }
+    private void PhantomMovement()
+    {
+        if (leftDashDelay > 0)
+        {
+            leftDashDelay -= Time.deltaTime;
+        }
+        if (rightDashDelay > 0)
+        {
+            rightDashDelay -= Time.deltaTime;
+        }
+
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            if (Input.GetKeyDown(KeyCode.A) && leftDashDelay <= 0)
+            {
+                rigi.velocity = rigi.velocity * dashVelocityDecrease;
+                rigi.AddRelativeForce(new Vector3(-dashSpeed, 0, 0), ForceMode.VelocityChange);
+                leftDashDelay = dashCooldown;
+            }
+            if (Input.GetKeyDown(KeyCode.D) && rightDashDelay <= 0)
+            {
+                rigi.velocity = rigi.velocity * dashVelocityDecrease;
+                rigi.AddRelativeForce(new Vector3(dashSpeed, 0, 0), ForceMode.VelocityChange);
+                rightDashDelay = dashCooldown;
+            }
+        }
+    }
 
     private void walk(GameObject nearestPlanet)
     {

@@ -44,4 +44,5 @@ MonoBehaviour:
   - TaggedPlayer
   - Hit
   - SendData
+  - SetStats
   DisableAutoOpenWizard: 1

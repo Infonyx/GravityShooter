@@ -45,6 +45,7 @@ GameObject:
   - component: {fileID: 54547545039702922}
   - component: {fileID: 114883786200264802}
   - component: {fileID: 114092165669098426}
+  - component: {fileID: 114334060927837878}
   - component: {fileID: 114330103481094126}
   - component: {fileID: 114174051039278160}
   - component: {fileID: 114766569976468252}
@@ -198,9 +199,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   health: 100
+  shootDamage: 24
+  meleeDamage: 100
+  spread: 0.01
+  cooldownTime: 0.1
   lineRenderer: {fileID: 1727124640824502, guid: 816b70a0a930bfd42bc3951c09b9d6e4,
     type: 2}
-  lineRendererSelf: {fileID: 0}
 --- !u!114 &114174051039278160
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -304,6 +308,18 @@ MonoBehaviour:
   instantiationId: -1
   currentMasterID: -1
   isRuntimeInstantiated: 0
+--- !u!114 &114334060927837878
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1871314560612890}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 487c32487cb7828468f2c4df0d485375, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  textField: {fileID: 1540968351514918, guid: b8f95de90bdd73a49a80969a020f35da, type: 2}
 --- !u!114 &114766569976468252
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -328,12 +344,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe9b5474e3379744a9ad220b5add4a64, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  forwardAcceleration: 14
+  strafeAcceleration: 8
   nearestPlanet: {fileID: 0}
   ySensivity: 2
   rotSensivity: 1
   speedLimit: 30
   speedLimitSettingSpeed: 0.1
   deacceleratorSpeed: 0.9
+  sniperZoom: 2.5
 --- !u!124 &124065191180706488
 Behaviour:
   m_ObjectHideFlags: 1

@@ -8,6 +8,11 @@ TagManager:
   - Health Bar
   - LineRenderer
   - LineRendererSelf
+  - Canvas
+  - PlayerManager
+  - PhantomPanel
+  - PhantomLeftBar
+  - PhantomRightBar
   layers:
   - Default
   - TransparentFX
