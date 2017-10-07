@@ -13,6 +13,14 @@ TagManager:
   - PhantomPanel
   - PhantomLeftBar
   - PhantomRightBar
+  - GruntPanel
+  - GruntBar
+  - EnergyPanel
+  - EnergyBar
+  - EnergyText
+  - RayCastPanel
+  - RayCastBar
+  - NameDisplayer
   layers:
   - Default
   - TransparentFX

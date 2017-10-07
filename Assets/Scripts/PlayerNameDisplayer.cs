@@ -7,7 +7,7 @@ public class PlayerNameDisplayer : Photon.PunBehaviour {
 
     public GameObject textField;
     private GameObject canvas;
-    private Text myName;
+    public Text myName;
     private Camera cam;
     private RaycastHit hit;
 
@@ -32,6 +32,24 @@ public class PlayerNameDisplayer : Photon.PunBehaviour {
     public void DestroyName()
     {
         Destroy(myName);
+    }
+
+    public override void OnPhotonPlayerDisconnected(PhotonPlayer otherPlayer)
+    {
+        base.OnPhotonPlayerDisconnected(otherPlayer);
+
+        foreach (GameObject displayer in GameObject.FindGameObjectsWithTag("NameDisplayer"))
+        {
+            Destroy(displayer);
+        }        
+        
+        if (!photonView.isMine)
+        {
+            cam = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
+            canvas = GameObject.FindGameObjectWithTag("Canvas");
+            myName = Instantiate(textField, canvas.transform).GetComponent<Text>();
+            myName.text = gameObject.GetPhotonView().owner.NickName;
+        }
     }
 
     void Update () {

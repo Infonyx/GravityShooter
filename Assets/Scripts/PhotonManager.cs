@@ -47,7 +47,6 @@ public class PhotonManager : Photon.PunBehaviour {
 
     public override void OnPhotonRandomJoinFailed(object[] codeAndMsg)
     {
-        Debug.Log("ASDFG");
         connectingPanel.SetActive(false);
         controlPanel.SetActive(true);
         PhotonNetwork.CreateRoom(null, new RoomOptions() { MaxPlayers = maxPlayers }, null);

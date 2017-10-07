@@ -45,4 +45,6 @@ MonoBehaviour:
   - Hit
   - SendData
   - SetStats
+  - SetHealth
+  - SetVisibility
   DisableAutoOpenWizard: 1

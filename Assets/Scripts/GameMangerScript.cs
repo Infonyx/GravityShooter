@@ -54,21 +54,24 @@ public class GameMangerScript : Photon.PunBehaviour {
         switch (playerClass)
         {
             case 1:
-                SetStats(user, 90, 70, 30, 0, 1, 12, 8);
+                SetStats(user, playerClass, 90, 70, 30, 0, 1, 12, 8);
                 break;
             case 2:
-                SetStats(user, 60, 7, 90, 0.02f, 0.05f, 16, 20);
+                SetStats(user, playerClass, 60, 10, 90, 0.02f, 0.10f, 16, 20);
                 break;
             case 3:
-                SetStats(user, 185, 23, 50, 0.1f, 0.25f, 10, 4);
+                SetStats(user, playerClass, 225, 23, 50, 0.1f, 0.25f, 10, 4);
+                break;
+            case 4:
+                SetStats(user, playerClass, 100, 22, 30, 0.03f, 0.2f, 14, 8);
                 break;
             default:
-                SetStats(user, 100, 23, 50, 0.1f, 0.25f, 14, 8);
+                SetStats(user, playerClass, 100, 23, 50, 0.1f, 0.25f, 14, 8);
                 break;
         }
     }
 
-    private void SetStats(GameObject user, int health, int shootdamage, int meleedamage, float spread, float cooldown, float forwardAcceleration, float sideAcceleration)
+    private void SetStats(GameObject user, int nPlayerClass, int health, int shootdamage, int meleedamage, float spread, float cooldown, float forwardAcceleration, float sideAcceleration)
     {
         pvp = user.GetComponent<PvpManager>();
         playerController = user.GetComponent<PlayerController>();
@@ -82,7 +85,7 @@ public class GameMangerScript : Photon.PunBehaviour {
         //pvp.cooldownTime = cooldown;
 
 
-        pvp.CallSetStats(health, shootdamage, meleedamage, spread, cooldown);
+        pvp.CallSetStats(nPlayerClass, health, shootdamage, meleedamage, spread, cooldown);
 
         //playerController.forwardAcceleration = forwardAcceleration;
         //playerController.strafeAcceleration = sideAcceleration;

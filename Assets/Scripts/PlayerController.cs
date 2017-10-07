@@ -32,6 +32,11 @@ public class PlayerController : Photon.MonoBehaviour {
     public float speedLimitSettingSpeed = 0.28f;
     public float deacceleratorSpeed = 0.9f;
 
+    private int playerClass;
+    private float doubleTapTime = 0.2f;
+    private float lastKeyStrokeTimeLeft;
+    private float lastKeyStrokeTimeRight;
+
     private float dashSpeed = 40;
     private float dashCooldown = 4;
     private float dashVelocityDecrease = 0.2f;
@@ -41,6 +46,20 @@ public class PlayerController : Photon.MonoBehaviour {
     private Slider leftBar;
     private Slider rightBar;
 
+    private float RayCastVisibility = 1;
+    private float RayCastVisibilityChange = 0.03f;
+    private Material RayCastMat;
+    private Color RayCastColor;
+    private float RayCastInvisibilityMaxVelocity = 3;
+    private Slider RayCastBar;
+    private float RayCastTime = 0;
+    private float RayCastMaxTime = 25;
+    private float RayCastDelay;
+    private float RayCastMaxDelay = 3;
+    private float RayCastConsumption = 2;
+    private float RayCastBarChangeSpeed = 0.1f;
+    private bool isInvisible = false;
+    private Text NameDisplay;
 
     public float sniperZoom = 3.5f;
 
@@ -59,16 +78,7 @@ public class PlayerController : Photon.MonoBehaviour {
         if (photonView.isMine)
         {
             PlayerController.LocalPlayerInstance = this.gameObject;
-        }
-        //DontDestroyOnLoad(this.gameObject);
-        
-        /*if (GameObject.FindGameObjectWithTag("PlayerManager").GetComponent<PlayerClassManager>().playerClass == 2)
-        {
-            GameObject.FindGameObjectWithTag("PhantomPanel").SetActive(true);
-            leftBar = GameObject.FindGameObjectWithTag("PhantomLeftBar").GetComponent<Slider>();
-            rightBar = GameObject.FindGameObjectWithTag("PhantomRightBar").GetComponent<Slider>();
-        }*/
-        
+        }      
     }
 
 
@@ -87,7 +97,6 @@ public class PlayerController : Photon.MonoBehaviour {
     void Start() {
         if (!photonView.isMine && PhotonNetwork.connected) { 
             Destroy(transform.GetChild(0).gameObject);
-            //Destroy(gameObject.GetComponent<PlayerController>());
         }
        
         playerSelf = gameObject;
@@ -96,16 +105,37 @@ public class PlayerController : Photon.MonoBehaviour {
         cam = Camera.main;
         Cursor.lockState = CursorLockMode.Locked;
         oldpos = Input.mousePosition;
+        playerClass = GameObject.FindGameObjectWithTag("PlayerManager").GetComponent<PlayerClassManager>().playerClass;
 
         cameraControlls = transform.GetChild(0).gameObject.GetComponent<CameraControlls>();
 
-        if (GameObject.FindGameObjectWithTag("PlayerManager").GetComponent<PlayerClassManager>().playerClass == 2)
+        if (playerClass == 1)
+        {
+            RayCastMat = GetComponent<Renderer>().material;
+            RayCastBar = GameObject.FindGameObjectWithTag("RayCastBar").GetComponent<Slider>();
+            NameDisplay = gameObject.GetComponent<PlayerNameDisplayer>().myName;
+        } else
+        {
+            GameObject.Find("RayCast").SetActive(false);
+        }
+
+        if (playerClass == 2)
         {
             leftBar = GameObject.Find("LeftBar").GetComponent<Slider>();
             rightBar = GameObject.Find("RightBar").GetComponent<Slider>();
         } else
         {
             GameObject.Find("Phantom").SetActive(false);
+        }
+
+        if (playerClass != 3)
+        {
+            GameObject.Find("Grunt").SetActive(false);
+        }
+
+        if (playerClass != 4)
+        {
+            GameObject.Find("Energy").SetActive(false);
         }
     } //Setup 
 
@@ -120,7 +150,6 @@ public class PlayerController : Photon.MonoBehaviour {
             {           
                 jetBoost();             
             }
-            
 
             if (Input.GetKey(KeyCode.LeftControl))
             {
@@ -155,14 +184,9 @@ public class PlayerController : Photon.MonoBehaviour {
 
             rotate();
 
-            if (GameObject.FindGameObjectWithTag("PlayerManager").GetComponent<PlayerClassManager>().playerClass == 2)
-            {
-                PhantomUpdate();
-                PhantomMovement();
-            }
+            
         }
-        //Debug.Log("Velocity: " + rigi.velocity.magnitude + photonView.owner);
-
+        ClassMovement();
     }
 
     private void jetBoost()
@@ -197,39 +221,6 @@ public class PlayerController : Photon.MonoBehaviour {
         }
         
     } //InSpace-Movement
-
-    private void PhantomUpdate()
-    {
-        leftBar.value = Mathf.Lerp(leftBar.value,1-leftDashDelay/dashCooldown, dashBarChangeSpeed);
-        rightBar.value =Mathf.Lerp(rightBar.value, 1-rightDashDelay/dashCooldown, dashBarChangeSpeed);
-    }
-    private void PhantomMovement()
-    {
-        if (leftDashDelay > 0)
-        {
-            leftDashDelay -= Time.deltaTime;
-        }
-        if (rightDashDelay > 0)
-        {
-            rightDashDelay -= Time.deltaTime;
-        }
-
-        if (Input.GetKey(KeyCode.LeftShift))
-        {
-            if (Input.GetKeyDown(KeyCode.A) && leftDashDelay <= 0)
-            {
-                rigi.velocity = rigi.velocity * dashVelocityDecrease;
-                rigi.AddRelativeForce(new Vector3(-dashSpeed, 0, 0), ForceMode.VelocityChange);
-                leftDashDelay = dashCooldown;
-            }
-            if (Input.GetKeyDown(KeyCode.D) && rightDashDelay <= 0)
-            {
-                rigi.velocity = rigi.velocity * dashVelocityDecrease;
-                rigi.AddRelativeForce(new Vector3(dashSpeed, 0, 0), ForceMode.VelocityChange);
-                rightDashDelay = dashCooldown;
-            }
-        }
-    }
 
     private void walk(GameObject nearestPlanet)
     {
@@ -305,6 +296,154 @@ public class PlayerController : Photon.MonoBehaviour {
         autoTurnRot = 0;
     }
 
+
+    //Class Abilities and Movement
+    private void ClassMovement()
+    {
+        switch (playerClass)
+        {
+            case 1:
+                if (photonView.isMine)
+                {
+                    RayCastInvisibility();
+                }
+                RayCastUpdate();
+                break;
+            case 2:
+                if (photonView.isMine)
+                {
+                    PhantomUpdate();
+                    PhantomMovement();
+                }
+                break;
+            case 3:
+                break;
+            default:
+                break;
+        }
+    }
+
+#region Phantom
+    private void PhantomUpdate()
+    {
+        leftBar.value = Mathf.Lerp(leftBar.value, 1 - leftDashDelay / dashCooldown, dashBarChangeSpeed);
+        rightBar.value = Mathf.Lerp(rightBar.value, 1 - rightDashDelay / dashCooldown, dashBarChangeSpeed);
+    }
+    private void PhantomMovement()
+    {
+        if (leftDashDelay > 0)
+        {
+            leftDashDelay -= Time.deltaTime;
+        }
+        if (rightDashDelay > 0)
+        {
+            rightDashDelay -= Time.deltaTime;
+        }
+
+        lastKeyStrokeTimeRight += Time.deltaTime;
+        lastKeyStrokeTimeLeft += Time.deltaTime;
+
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            if (lastKeyStrokeTimeLeft < doubleTapTime && leftDashDelay <= 0)
+            {
+                rigi.velocity = rigi.velocity * dashVelocityDecrease;
+                rigi.AddRelativeForce(new Vector3(-dashSpeed, 0, 0), ForceMode.VelocityChange);
+                leftDashDelay = dashCooldown;
+            }
+
+            lastKeyStrokeTimeLeft = 0;
+        }
+
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            if (lastKeyStrokeTimeRight < doubleTapTime && rightDashDelay <= 0)
+            {
+                rigi.velocity = rigi.velocity * dashVelocityDecrease;
+                rigi.AddRelativeForce(new Vector3(dashSpeed, 0, 0), ForceMode.VelocityChange);
+                rightDashDelay = dashCooldown;
+            }
+
+            lastKeyStrokeTimeRight = 0;
+        }  
+    }
+    #endregion
+
+#region RayCast
+    private void RayCastUpdate()
+    {
+        RayCastMat = GetComponent<Renderer>().material;
+        RayCastColor = RayCastMat.color;
+        RayCastColor.a = Mathf.Lerp(RayCastColor.a, RayCastVisibility, RayCastVisibilityChange);
+        RayCastMat.color = RayCastColor;
+        if (!photonView.isMine)
+        {
+            NameDisplay.color = new Color(NameDisplay.color.r, NameDisplay.color.g, NameDisplay.color.b, RayCastColor.a);
+        }   
+    }
+
+    private void RayCastInvisibility()
+    {
+        Debug.Log(RayCastDelay + " :: " + RayCastTime + " :: "+ isInvisible);
+        if (!isInvisible)
+        {
+            if (RayCastDelay > 0)
+            {
+                RayCastDelay -= Time.deltaTime;
+            } else if (RayCastTime > 0)
+            {
+                RayCastTime -= Time.deltaTime;
+            }
+        }
+
+        RayCastBar.value = Mathf.Lerp(RayCastBar.value, 1-RayCastTime/RayCastMaxTime, RayCastBarChangeSpeed);
+
+
+        if (RayCastTime <= 0 && RayCastDelay <= 0 && Input.GetKey(KeyCode.LeftControl) && rigi.velocity.magnitude < RayCastInvisibilityMaxVelocity && RayCastVisibility == 1)
+        {
+            isInvisible = true;
+            photonView.RPC("SetVisibility", PhotonTargets.All, 0f);
+            StartCoroutine("DecreaseBar");
+        } else if (RayCastVisibility == 0 && (!(Input.GetKey(KeyCode.LeftControl) && rigi.velocity.magnitude < RayCastInvisibilityMaxVelocity) || RayCastTime >= RayCastMaxTime))
+        {
+            isInvisible = false;
+            photonView.RPC("SetVisibility", PhotonTargets.All, 1f);
+            RayCastDelay = RayCastMaxDelay;
+
+        }
+    }
+
+    private IEnumerator DecreaseBar()
+    {
+        while (isInvisible)
+        {
+            Debug.Log("Wuaidb");
+            RayCastTime += Time.deltaTime * (RayCastConsumption + 1);
+            yield return null;
+        }
+    }
+
+    [PunRPC] 
+    public void SetVisibility(float visiblity)
+    {
+        RayCastVisibility = visiblity;
+    }
+#endregion
+
+
+    //Minor Functions
+    private void FindNearestPlanet()
+    {
+        foreach (GameObject planet in GameObject.FindGameObjectsWithTag("Planet"))
+        {
+            if (nearestPlanet == null) nearestPlanet = planet;
+            else if ((nearestPlanet.transform.position - transform.position).magnitude > (planet.transform.position - transform.position).magnitude)
+            {
+                nearestPlanet = planet;
+            }
+        }
+    }
+
     public Vector3 worldVelocity(GameObject player,GameObject planet)
     {
         return player.GetComponent<Rigidbody>().velocity + planet.GetComponent<PlanetOrbit>().orbitVelocity;
@@ -321,30 +460,4 @@ public class PlayerController : Photon.MonoBehaviour {
     {
         return PhotonNetwork.isMasterClient;
     }
-
-    private void FindNearestPlanet()
-    {
-        foreach (GameObject planet in GameObject.FindGameObjectsWithTag("Planet"))
-        {
-            if (nearestPlanet == null) nearestPlanet = planet;
-            else if ((nearestPlanet.transform.position - transform.position).magnitude > (planet.transform.position - transform.position).magnitude)
-            {
-                nearestPlanet = planet;
-            }
-        }
-    }
-
-    /*
-    void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
-    {
-        if (stream.isWriting)
-        {
-            stream.SendNext(GetComponent<Rigidbody>().position);
-            
-        } else
-        {
-            GetComponent<Rigidbody>() = stream.ReceiveNext();
-        }
-            
-    } */
 }
